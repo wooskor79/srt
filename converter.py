@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import os
-import re
 
 # ==============================================================================
 # 1. 시간 및 SRT 변환 함수
@@ -29,7 +28,7 @@ def parse_time_to_seconds(time_str: str) -> float:
                 minutes = int(parts[0])
                 seconds = float(parts[1])
                 return minutes * 60 + seconds
-            # HH:MM:SS 형식도 지원
+            # HH:MM:SS 형식 지원
             elif len(parts) == 3:
                 hours = int(parts[0])
                 minutes = int(parts[1])
@@ -50,82 +49,74 @@ def to_srt_time(total_seconds: float) -> str:
     hours = int(total_seconds // 3600)
     minutes = int((total_seconds % 3600) // 60)
     seconds = int(total_seconds % 60)
-    # 밀리초는 소수점 이하 셋째 자리까지 사용
     milliseconds = int((total_seconds * 1000) % 1000)
 
-    # 00:00:00,000 형식으로 포맷팅
     return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
 
-def create_srt_content(df: pd.DataFrame, subtitle_column: str) -> str:
-    """DataFrame을 받아 SRT 파일 내용을 문자열로 생성합니다."""
+def create_srt_content(df: pd.DataFrame, platform: str, subtitle_type: str) -> str:
+    """플랫폼별 특성에 맞춰 SRT 내용을 생성합니다."""
     
-    # 필수 컬럼 검사
-    if 'Time' not in df.columns or subtitle_column not in df.columns:
-        raise ValueError(f"필수 컬럼 ('Time', '{subtitle_column}')이 파일에 없습니다. 파일이 Language Reactor 형식인지 확인해주세요.")
+    # 1. 컬럼 매핑 로직
+    actual_col = ""
+    # 시간 컬럼 찾기 (유튜브/넷플릭스 공통)
+    time_col = next((c for c in df.columns if 'Time' in str(c) or 'Start' in str(c)), "Time")
+    
+    if platform == "youtube":
+        # 유튜브는 보통 'Translation' 혹은 'Subtitle' 키워드 사용
+        if subtitle_type == "Human Translation":
+            actual_col = next((c for c in df.columns if 'Translation' in str(c) or '한국어' in str(c)), "")
+        else:
+            actual_col = next((c for c in df.columns if 'Subtitle' in str(c) or 'Original' in str(c)), "")
+    else:
+        # 넷플릭스는 기존처럼 전달받은 컬럼명 그대로 사용
+        actual_col = subtitle_type
 
-    # 1. 시간 변환 및 종료 시간 계산
-    df['Start_Sec'] = df['Time'].apply(parse_time_to_seconds)
-    # 다음 자막의 시작 시간을 현재 자막의 종료 시간으로 설정 (마지막은 3초 길이)
+    # 매핑 실패 시 예외 처리
+    if not actual_col or actual_col not in df.columns:
+        if subtitle_type in df.columns:
+            actual_col = subtitle_type
+        else:
+            raise ValueError(f"자막 컬럼을 찾을 수 없습니다. (플랫폼: {platform}, 선택: {subtitle_type})")
+
+    if time_col not in df.columns:
+        raise ValueError(f"시간 컬럼('{time_col}')을 찾을 수 없습니다.")
+
+    # 2. 시간 변환 및 종료 시간 계산
+    df['Start_Sec'] = df[time_col].apply(parse_time_to_seconds)
     df['End_Sec'] = df['Start_Sec'].shift(-1).fillna(df['Start_Sec'] + 3.0)
 
-    # 2. SRT 시간 형식으로 포맷팅
-    df['Start_SRT'] = df['Start_Sec'].apply(to_srt_time)
-    df['End_SRT'] = df['End_Sec'].apply(to_srt_time)
-    
     # 3. SRT 구조 생성
-    # 자막 텍스트 내의 줄 바꿈을 공백으로 대체하고 공백 제거
-    df[subtitle_column] = df[subtitle_column].astype(str).str.replace(r'\n', ' ', regex=True).str.strip()
+    df[actual_col] = df[actual_col].astype(str).str.replace(r'\n', ' ', regex=True).str.strip()
     
     srt_content = []
     for index, row in df.iterrows():
-        # Nan 값이 포함된 행은 건너뜀 (시간이 파싱되지 않은 경우)
         if pd.isna(row['Start_Sec']):
             continue
 
-        # 순서 번호
         srt_content.append(str(len(srt_content) // 4 + 1))
-        # 시간 코드
-        timecode = f"{row['Start_SRT']} --> {row['End_SRT']}"
+        timecode = f"{to_srt_time(row['Start_Sec'])} --> {to_srt_time(row['End_Sec'])}"
         srt_content.append(timecode)
-        # 자막 텍스트
-        srt_content.append(row[subtitle_column])
-        # 빈 줄
+        srt_content.append(row[actual_col])
         srt_content.append("")
         
     return '\n'.join(srt_content).strip()
 
 # ==============================================================================
-# 2. 메인 파일 처리 함수 (app.py에서 호출됨)
+# 2. 메인 파일 처리 함수
 # ==============================================================================
 
-def process_xlsx_file(input_file_path: str, output_dir: str, subtitle_column: str, final_srt_filename: str) -> tuple[bool, str, str]:
-    """
-    XLSX 파일을 읽어 SRT로 변환하고 지정된 출력 디렉토리에 저장합니다.
-    :param final_srt_filename: 공백이 유지된 SRT 파일 이름
-    :return: (성공 여부, 메시지, 자막 컬럼 이름)
-    """
+def process_xlsx_file(input_file_path: str, output_dir: str, platform: str, subtitle_column: str, final_srt_filename: str) -> tuple[bool, str]:
     try:
-        # 1. 파일 읽기
-        # openpyxl 엔진을 사용하여 XLSX 파일을 읽습니다.
         df = pd.read_excel(input_file_path, engine='openpyxl')
+        srt_content = create_srt_content(df, platform, subtitle_column)
         
-        # 2. SRT 내용 생성
-        srt_content = create_srt_content(df, subtitle_column)
-        
-        # 3. SRT 파일 저장 경로 결정 (app.py에서 받은 이름을 사용)
         output_file_path = os.path.join(output_dir, final_srt_filename)
-        
-        # 4. SRT 파일 저장
-        # UTF-8 인코딩을 사용하여 자막 깨짐 방지
         with open(output_file_path, 'w', encoding='utf-8') as f:
             f.write(srt_content)
             
-        return True, f"'{os.path.basename(input_file_path)}' 파일이 '{final_srt_filename}'로 변환되어 저장되었습니다.", subtitle_column
+        return True, f"'{final_srt_filename}' 변환 완료."
         
     except ValueError as e:
-        # 컬럼 이름 오류 등
-        return False, str(e), subtitle_column
-        
+        return False, str(e)
     except Exception as e:
-        # 기타 파일 입출력 오류 등
-        return False, f"변환 중 알 수 없는 오류가 발생했습니다: {e}", subtitle_column
+        return False, f"변환 중 오류 발생: {e}"
