@@ -21,7 +21,7 @@
 
     <div class="w-full max-w-2xl bg-white shadow-xl rounded-2xl p-6 sm:p-10 border border-gray-100">
         <h1 class="text-3xl font-bold text-gray-900 mb-2 text-center">Language Reactor SRT 변환기</h1>
-        <p class="text-center text-gray-500 mb-8">플랫폼을 선택하고 XLSX 파일을 업로드하세요.</p>
+        <p class="text-center text-gray-500 mb-8">옵션을 선택하고 XLSX 파일을 업로드하세요.</p>
         
         <form id="upload-form" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -58,11 +58,11 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">3. 저장 방식</label>
                 <div class="flex space-x-4">
                     <label class="inline-flex items-center">
-                        <input type="radio" name="save_method" value="nas" checked class="form-radio text-indigo-600">
+                        <input type="radio" name="save_method" value="nas" class="form-radio text-indigo-600">
                         <span class="ml-2 text-gray-700">NAS 저장 (/volume1/torrent)</span>
                     </label>
                     <label class="inline-flex items-center">
-                        <input type="radio" name="save_method" value="download" class="form-radio text-indigo-600">
+                        <input type="radio" name="save_method" value="download" checked class="form-radio text-indigo-600">
                         <span class="ml-2 text-gray-700">내 PC로 다운로드</span>
                     </label>
                 </div>
@@ -100,9 +100,8 @@
                 const response = await fetch('/', { method: 'POST', body: formData });
                 const data = await response.json();
 
-                logBox.innerHTML = ""; // 기존 대기 메시지 삭제
+                logBox.innerHTML = ""; 
 
-                // 1. 성공/실패 메시지 출력
                 if (data.messages) {
                     data.messages.forEach(msg => {
                         const isSuccess = msg[0] === 'Success';
@@ -112,7 +111,6 @@
                     });
                 }
 
-                // 2. 다운로드 방식인 경우 파일 생성 및 다운로드 트리거
                 if (data.download) {
                     const blob = new Blob([data.download.content], { type: 'text/plain' });
                     const url = window.URL.createObjectURL(blob);
