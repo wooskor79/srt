@@ -8,6 +8,13 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f7f7f9; }
+        .log-box { 
+            background-color: #0d1117; 
+            color: #e6edf3; 
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace; 
+        }
+        .log-box::-webkit-scrollbar { width: 8px; }
+        .log-box::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
     </style>
 </head>
 <body class="p-4 sm:p-8 min-h-screen flex items-center justify-center">
@@ -16,46 +23,55 @@
         <h1 class="text-3xl font-bold text-gray-900 mb-2 text-center">Language Reactor SRT 변환기</h1>
         <p class="text-center text-gray-500 mb-8">플랫폼을 선택하고 XLSX 파일을 업로드하세요.</p>
         
-        <form method="POST" enctype="multipart/form-data" action="/" class="space-y-6">
+        <form id="upload-form" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">1. 플랫폼 선택</label>
+                    <div class="flex space-x-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="platform" value="youtube" checked class="form-radio text-indigo-600">
+                            <span class="ml-2 text-gray-700">유튜브</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="platform" value="netflix" class="form-radio text-indigo-600">
+                            <span class="ml-2 text-gray-700">넷플릭스</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">2. 자막 유형</label>
+                    <div class="flex space-x-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="subtitle_type" value="Subtitle" class="form-radio text-indigo-600">
+                            <span class="ml-2 text-gray-700">원문</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="subtitle_type" value="Human Translation" checked class="form-radio text-indigo-600">
+                            <span class="ml-2 text-gray-700">번역</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">1. 플랫폼 선택 (필수)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">3. 저장 방식</label>
                 <div class="flex space-x-4">
                     <label class="inline-flex items-center">
-                        <input type="radio" name="platform" value="youtube" checked class="form-radio text-indigo-600 h-4 w-4">
-                        <span class="ml-2 text-gray-700">유튜브 (YouTube)</span>
+                        <input type="radio" name="save_method" value="nas" checked class="form-radio text-indigo-600">
+                        <span class="ml-2 text-gray-700">NAS 저장 (/volume1/torrent)</span>
                     </label>
                     <label class="inline-flex items-center">
-                        <input type="radio" name="platform" value="netflix" class="form-radio text-indigo-600 h-4 w-4">
-                        <span class="ml-2 text-gray-700">넷플릭스 (Netflix)</span>
+                        <input type="radio" name="save_method" value="download" class="form-radio text-indigo-600">
+                        <span class="ml-2 text-gray-700">내 PC로 다운로드</span>
                     </label>
                 </div>
             </div>
 
             <div>
-                <label for="files" class="block text-sm font-medium text-gray-700 mb-2">2. XLSX 파일 업로드 (다중 선택 가능)</label>
+                <label for="files" class="block text-sm font-medium text-gray-700 mb-2">4. XLSX 파일 업로드</label>
                 <input type="file" id="files" name="files" multiple accept=".xlsx" 
-                       class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-3 
-                              file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold 
-                              file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 transition duration-150">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">3. 변환할 자막 유형 선택</label>
-                <div class="flex space-x-4">
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="subtitle_type" value="Subtitle" class="form-radio text-indigo-600 h-4 w-4">
-                        <span class="ml-2 text-gray-700">Subtitle (원문)</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="subtitle_type" value="Human Translation" checked class="form-radio text-indigo-600 h-4 w-4">
-                        <span class="ml-2 text-gray-700">Human Translation (한국어 번역)</span>
-                    </label>
-                </div>
-            </div>
-            
-            <div class="bg-indigo-50 border-l-4 border-indigo-500 text-indigo-800 p-3 rounded-lg text-sm">
-                <p class="font-semibold">저장 경로:</p>
-                <p class="mt-0.5">NAS의 **`/volume1/torrent`** 폴더에 저장됩니다.</p>
+                       class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-3">
             </div>
 
             <button type="submit" class="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:bg-indigo-700 transition duration-150 transform hover:scale-[1.01]">
@@ -63,19 +79,57 @@
             </button>
         </form>
         
-        {% if messages %}
-            <div class="mt-8 pt-6 border-t border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">처리 결과</h2>
-                <div class="space-y-3">
-                    {% for type, message in messages %}
-                        <div class="p-3 rounded-lg text-sm {{ 'bg-green-100 text-green-800 border-green-200' if type == 'Success' else 'bg-red-100 text-red-800 border-red-200' }} border">
-                            {{ '🟢' if type == 'Success' else '🔴' }} {{ type }}: {{ message }}
-                        </div>
-                    {% endfor %}
-                </div>
+        <div class="mt-8 pt-6 border-t border-gray-200">
+            <h2 class="text-sm font-semibold text-gray-600 mb-2">로그 / 상태</h2>
+            <div id="log-container" class="log-box w-full h-48 p-4 rounded-lg overflow-y-auto text-xs leading-relaxed">
+                > 대기 중...
             </div>
-        {% endif %}
+        </div>
     </div>
 
+    <script>
+        const form = document.getElementById('upload-form');
+        const logBox = document.getElementById('log-container');
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            logBox.innerHTML = "> 작업을 시작합니다...<br>";
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                logBox.innerHTML = ""; // 기존 대기 메시지 삭제
+
+                // 1. 성공/실패 메시지 출력
+                if (data.messages) {
+                    data.messages.forEach(msg => {
+                        const isSuccess = msg[0] === 'Success';
+                        const color = isSuccess ? 'text-green-400' : 'text-red-400';
+                        const icon = isSuccess ? '🟢' : '🔴';
+                        logBox.innerHTML += `<span class="${color}">${icon} [${msg[0]}] ${msg[1]}</span><br>`;
+                    });
+                }
+
+                // 2. 다운로드 방식인 경우 파일 생성 및 다운로드 트리거
+                if (data.download) {
+                    const blob = new Blob([data.download.content], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.download.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    logBox.innerHTML += `<span class="text-indigo-400">🔹 브라우저에서 다운로드가 시작되었습니다.</span><br>`;
+                }
+            } catch (err) {
+                logBox.innerHTML += `<span class="text-red-400">🔴 [Error] 서버와 연결할 수 없습니다.</span><br>`;
+            }
+            logBox.scrollTop = logBox.scrollHeight;
+        };
+    </script>
 </body>
 </html>
