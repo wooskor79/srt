@@ -8,11 +8,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f7f7f9; }
-        .log-box { 
-            background-color: #0d1117; 
-            color: #e6edf3; 
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace; 
-        }
+        .log-box { background-color: #0d1117; color: #e6edf3; font-family: 'Consolas', monospace; }
         .log-box::-webkit-scrollbar { width: 8px; }
         .log-box::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
     </style>
@@ -28,28 +24,16 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">1. 플랫폼 선택</label>
                     <div class="flex space-x-4">
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="platform" value="youtube" checked class="form-radio text-indigo-600">
-                            <span class="ml-2 text-gray-700">유튜브</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="platform" value="netflix" class="form-radio text-indigo-600">
-                            <span class="ml-2 text-gray-700">넷플릭스</span>
-                        </label>
+                        <label class="inline-flex items-center"><input type="radio" name="platform" value="youtube" checked class="form-radio text-indigo-600"><span class="ml-2 text-gray-700">유튜브</span></label>
+                        <label class="inline-flex items-center"><input type="radio" name="platform" value="netflix" class="form-radio text-indigo-600"><span class="ml-2 text-gray-700">넷플릭스</span></label>
                     </div>
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">2. 자막 유형</label>
-                    <div class="flex space-x-4">
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="subtitle_type" value="Subtitle" class="form-radio text-indigo-600">
-                            <span class="ml-2 text-gray-700">원문</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="subtitle_type" value="Human Translation" checked class="form-radio text-indigo-600">
-                            <span class="ml-2 text-gray-700">번역</span>
-                        </label>
+                    <div class="flex flex-wrap gap-4">
+                        <label class="inline-flex items-center"><input type="radio" name="subtitle_type" value="original" class="form-radio text-indigo-600"><span class="ml-2 text-gray-700">원문</span></label>
+                        <label class="inline-flex items-center"><input type="radio" name="subtitle_type" value="translation" class="form-radio text-indigo-600"><span class="ml-2 text-gray-700">번역(한글만)</span></label>
+                        <label class="inline-flex items-center"><input type="radio" name="subtitle_type" value="dual" checked class="form-radio text-indigo-600"><span class="ml-2 text-gray-700">원문+번역</span></label>
                     </div>
                 </div>
             </div>
@@ -57,26 +41,13 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">3. 저장 방식</label>
                 <div class="flex space-x-4">
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="save_method" value="nas" class="form-radio text-indigo-600">
-                        <span class="ml-2 text-gray-700">NAS 저장 (/volume1/torrent)</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="save_method" value="download" checked class="form-radio text-indigo-600">
-                        <span class="ml-2 text-gray-700">내 PC로 다운로드</span>
-                    </label>
+                    <label class="inline-flex items-center"><input type="radio" name="save_method" value="nas" class="form-radio text-indigo-600"><span class="ml-2 text-gray-700">NAS 저장</span></label>
+                    <label class="inline-flex items-center"><input type="radio" name="save_method" value="download" checked class="form-radio text-indigo-600"><span class="ml-2 text-gray-700">내 PC로 다운로드</span></label>
                 </div>
             </div>
 
-            <div>
-                <label for="files" class="block text-sm font-medium text-gray-700 mb-2">4. XLSX 파일 업로드</label>
-                <input type="file" id="files" name="files" multiple accept=".xlsx" 
-                       class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-3">
-            </div>
-
-            <button type="submit" class="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:bg-indigo-700 transition duration-150 transform hover:scale-[1.01]">
-                변환 시작
-            </button>
+            <input type="file" id="files" name="files" multiple accept=".xlsx" class="block w-full text-sm border rounded-lg p-3">
+            <button type="submit" class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:bg-indigo-700 transition transform hover:scale-[1.01]">변환 시작</button>
         </form>
         
         <div class="mt-8 pt-6 border-t border-gray-200">
@@ -98,33 +69,35 @@
 
             try {
                 const response = await fetch('/', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error("서버 응답 오류");
+                
                 const data = await response.json();
-
                 logBox.innerHTML = ""; 
 
-                if (data.messages) {
-                    data.messages.forEach(msg => {
-                        const isSuccess = msg[0] === 'Success';
-                        const color = isSuccess ? 'text-green-400' : 'text-red-400';
-                        const icon = isSuccess ? '🟢' : '🔴';
-                        logBox.innerHTML += `<span class="${color}">${icon} [${msg[0]}] ${msg[1]}</span><br>`;
-                    });
-                }
+                data.messages.forEach(msg => {
+                    const isSuccess = msg[0] === 'Success';
+                    logBox.innerHTML += `<span class="${isSuccess ? 'text-green-400' : 'text-red-400'}">${isSuccess ? '🟢' : '🔴'} [${msg[0]}] ${msg[1]}</span><br>`;
+                });
 
                 if (data.download) {
-                    const blob = new Blob([data.download.content], { type: 'text/plain' });
+                    // Blob을 이용해 브라우저 기본 다운로드 위치로 즉시 전송
+                    const blob = new Blob([data.download.content], { type: 'text/plain;charset=utf-8' });
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
+                    a.style.display = 'none';
                     a.href = url;
                     a.download = data.download.filename;
                     document.body.appendChild(a);
                     a.click();
-                    a.remove();
-                    window.URL.revokeObjectURL(url);
-                    logBox.innerHTML += `<span class="text-indigo-400">🔹 브라우저에서 다운로드가 시작되었습니다.</span><br>`;
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }, 100);
+                    logBox.innerHTML += `<span class="text-indigo-400">🔹 내 PC로 즉시 다운로드가 시작되었습니다.</span><br>`;
                 }
             } catch (err) {
-                logBox.innerHTML += `<span class="text-red-400">🔴 [Error] 서버와 연결할 수 없습니다.</span><br>`;
+                logBox.innerHTML += `<span class="text-red-400">🔴 [Error] 서버 통신 실패 또는 데이터 처리 오류.</span><br>`;
+                console.error(err);
             }
             logBox.scrollTop = logBox.scrollHeight;
         };

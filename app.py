@@ -20,7 +20,7 @@ def upload_file():
         files = request.files.getlist('files')
         platform = request.form.get('platform', 'youtube')
         subtitle_choice = request.form.get('subtitle_type', 'Human Translation')
-        save_method = request.form.get('save_method', 'download') # 기본값 download 매칭
+        save_method = request.form.get('save_method', 'download')
         
         if not files or files[0].filename == '':
             return jsonify({"messages": [("Error", "파일을 선택하지 않았습니다.")]}), 400
@@ -46,17 +46,15 @@ def upload_file():
                             "filename": final_srt_filename
                         }
                         results.append(("Success", f"'{final_srt_filename}' 변환 성공! 🟢"))
-                
                 except Exception as e:
-                    results.append(("Error", f"'{file.filename}' 처리 중 오류: {str(e)}"))
+                    results.append(("Error", f"'{file.filename}' 처리 오류: {str(e)}"))
             else:
-                 results.append(("Error", f"'{file.filename}'은 지원하지 않는 파일 형식입니다."))
+                 results.append(("Error", f"'{file.filename}'은 지원하지 않는 형식입니다."))
 
         return jsonify({
             "messages": results,
             "download": download_data if save_method == 'download' else None
         })
-        
     return render_template('index.html')
 
 if __name__ == '__main__':
