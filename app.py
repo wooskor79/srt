@@ -62,7 +62,7 @@ def logs_page():
     return render_template('logs.html')
 
 def generate_docker_logs():
-    # 컨테이너 이름 lr-srt_converter의 로그를 실시간 읽기
+    # 아래 줄의 마지막 인자를 새로운 docker-compose.yml의 container_name인 'test_srt'로 수정했습니다.
     process = subprocess.Popen(
         ['docker', 'logs', '-f', '--tail', '50', 'lr-srt_converter'],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
