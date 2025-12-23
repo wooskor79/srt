@@ -7,8 +7,9 @@ services:
     ports:
       - "5050:5000"
     volumes:
-      # NAS의 실제 경로 : 컨테이너 내부 출력 경로
       - "/volume1/torrent:/output"
+      # 내부 클라이언트가 호스트 도커 엔진에 접근할 수 있게 설정
+      - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
       - TZ=Asia/Seoul
     restart: unless-stopped

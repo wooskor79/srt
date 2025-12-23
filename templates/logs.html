@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT Converter Real-time Logs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0d1117; color: #c9d1d9; font-family: 'Consolas', monospace; }
+        .log-container { height: 80vh; overflow-y: auto; display: flex; flex-direction: column-reverse; }
+        .log-line { border-bottom: 1px solid #21262d; padding: 4px 0; font-size: 0.85rem; }
+        .status-badge { padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 8px; font-size: 0.75rem; }
+        .bg-success { background-color: #238636; color: white; }
+        .bg-error { background-color: #da3633; color: white; }
+        .bg-info { background-color: #1f6feb; color: white; }
+    </style>
+</head>
+<body class="p-4 sm:p-10">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-white">실시간 변환 모니터링</h1>
+            <div class="text-sm text-gray-400">Target: tran.wooskor.com</div>
+        </div>
+
+        <div id="log-display" class="log-container bg-[#161b22] rounded-xl p-6 border border-[#30363d]">
+            <div id="log-content"></div>
+        </div>
+    </div>
+
+    <script>
+        const logContent = document.getElementById('log-content');
+        const eventSource = new EventSource("/stream-logs");
+
+        eventSource.onmessage = function(event) {
+            const [tag, message] = event.data.split('|');
+            const row = document.createElement('div');
+            row.className = 'log-line';
+
+            let badge = "";
+            let msgText = message;
+
+            if (tag === "SUCCESS") {
+                badge = `<span class="status-badge bg-success">변환 성공</span>`;
+            } else if (tag === "FAILED") {
+                badge = `<span class="status-badge bg-error">변환 실패</span>`;
+            } else if (tag === "FILE") {
+                badge = `<span class="status-badge bg-info">대상 파일</span>`;
+                msgText = message.split('Target: ')[1];
+            }
+
+            row.innerHTML = `${badge} <span class="text-gray-500">${new Date().toLocaleTimeString()}</span> ${msgText}`;
+            logContent.prepend(row);
+        };
+
+        eventSource.onerror = function() {
+            console.error("SSE 연결 오류");
+        };
+    </script>
+</body>
+</html>
